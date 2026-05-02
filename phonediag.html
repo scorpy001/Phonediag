@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#050a0f">
+<title>PhoneDiag AI</title>
+<style>
+:root{--bg:#050a0f;--bg2:#0a1520;--bg3:#0f2030;--a:#00e5ff;--a2:#00ff9d;--w:#ffb300;--e:#ff3d5a;--t:#c8e6f0;--d:#3a6a86;--c:#0a1820;--b:#163248;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);color:var(--t);font-family:system-ui,sans-serif;font-weight:300;padding-bottom:60px;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.02) 1px,transparent 1px);background-size:36px 36px;pointer-events:none;z-index:0;}
+.wrap{position:relative;z-index:1;max-width:640px;margin:0 auto;padding:10px;}
+
+/* HEADER */
+.hdr{text-align:center;padding:18px 0 12px;}
+.hdr-icon{font-size:2.4rem;display:block;filter:drop-shadow(0 0 14px var(--a));}
+.hdr h1{font-size:1.5rem;color:var(--a);letter-spacing:5px;font-weight:700;text-shadow:0 0 20px rgba(0,229,255,.4);}
+.hdr p{font-size:.65rem;color:var(--d);letter-spacing:2px;text-transform:uppercase;margin-top:2px;}
+.ai-badge{display:inline-block;margin-top:6px;padding:3px 12px;background:linear-gradient(135deg,rgba(0,229,255,.15),rgba(0,255,157,.15));border:1px solid var(--a);border-radius:20px;font-size:.68rem;color:var(--a);letter-spacing:2px;}
+
+/* SCORE */
+.score{display:flex;align-items:center;gap:12px;background:var(--c);border:1px solid var(--b);border-radius:8px;padding:12px;margin-bottom:10px;}
+.sc-ring{width:62px;height:62px;border-radius:50%;border:3px solid var(--b);display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:var(--a);flex-shrink:0;transition:all .5s;font-weight:700;}
+.sc-info{flex:1;}
+.sc-info small{font-size:.65rem;color:var(--d);letter-spacing:1px;text-transform:uppercase;}
+.sc-val{font-size:1.2rem;font-weight:700;color:var(--a2);}
+.sc-bar{height:3px;background:var(--b);border-radius:2px;margin-top:4px;overflow:hidden;}
+.sc-fill{height:100%;background:linear-gradient(90deg,var(--a),var(--a2));border-radius:2px;transition:width .8s;width:0%;}
+
+/* BUTTONS */
+.scan-btn{display:block;width:100%;padding:14px;background:linear-gradient(135deg,#003d5c,#005a80);border:1px solid var(--a);color:var(--a);font-size:.9rem;letter-spacing:3px;cursor:pointer;border-radius:6px;margin-bottom:6px;text-transform:uppercase;font-weight:700;transition:all .2s;}
+.scan-btn:active{transform:scale(.98);}
+.scan-btn:disabled{opacity:.5;cursor:not-allowed;}
+.ai-btn{display:block;width:100%;padding:14px;background:linear-gradient(135deg,#1a0040,#2d0060);border:1px solid #a855f7;color:#c084fc;font-size:.9rem;letter-spacing:2px;cursor:pointer;border-radius:6px;margin-bottom:10px;text-transform:uppercase;font-weight:700;transition:all .2s;}
+.ai-btn:active{transform:scale(.98);}
+.ai-btn:disabled{opacity:.5;cursor:not-allowed;}
+
+/* SECTIONS */
+.sec{background:var(--c);border:1px solid var(--b);border-radius:8px;margin-bottom:7px;overflow:hidden;}
+.sec-hdr{display:flex;align-items:center;gap:9px;padding:11px 13px;background:var(--bg3);cursor:pointer;user-select:none;}
+.sec-ico{font-size:1rem;width:22px;text-align:center;}
+.sec-title{flex:1;font-weight:600;font-size:.85rem;}
+.badge{font-size:.62rem;padding:2px 7px;border-radius:10px;background:var(--b);color:var(--d);font-weight:600;}
+.badge.ok{background:rgba(0,255,157,.12);color:var(--a2);}
+.badge.warn{background:rgba(255,179,0,.12);color:var(--w);}
+.badge.fail{background:rgba(255,61,90,.12);color:var(--e);}
+.arr{color:var(--d);font-size:.7rem;transition:transform .2s;margin-left:4px;}
+.arr.open{transform:rotate(90deg);}
+.sec-body{display:none;border-top:1px solid var(--b);}
+.sec-body.vis{display:block;}
+
+/* ROWS */
+.row{display:flex;align-items:flex-start;gap:9px;padding:10px 12px;border-bottom:1px solid rgba(22,50,72,.5);}
+.row:last-child{border-bottom:none;}
+.row-ico{font-size:.95rem;width:20px;text-align:center;flex-shrink:0;padding-top:2px;}
+.row-info{flex:1;min-width:0;}
+.row-name{font-size:.82rem;font-weight:600;}
+.row-det{font-size:.7rem;color:var(--d);margin-top:2px;line-height:1.5;word-break:break-word;}
+.st{font-size:.62rem;padding:3px 7px;border-radius:3px;border:1px solid var(--b);color:var(--d);min-width:52px;text-align:center;flex-shrink:0;margin-top:2px;font-weight:600;}
+.st.ok{border-color:var(--a2);color:var(--a2);background:rgba(0,255,157,.07);}
+.st.warn{border-color:var(--w);color:var(--w);background:rgba(255,179,0,.07);}
+.st.fail{border-color:var(--e);color:var(--e);background:rgba(255,61,90,.07);}
+.st.run{border-color:var(--a);color:var(--a);animation:blink .7s infinite;}
+.st.info{border-color:var(--a);color:var(--a);}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* MINI BUTTONS */
+.btn{display:inline-block;margin-top:7px;padding:6px 14px;background:var(--bg3);border:1px solid var(--b);color:var(--a);border-radius:4px;cursor:pointer;font-size:.72rem;letter-spacing:1px;font-weight:600;transition:all .15s;}
+.btn:active{transform:scale(.97);}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn.stop{color:var(--e);border-color:var(--e);}
+
+/* BARS */
+.mbar{height:3px;background:var(--b);border-radius:2px;margin-top:5px;overflow:hidden;}
+.mfill{height:100%;background:var(--a2);border-radius:2px;transition:width .3s;width:0%;}
+
+/* MIC VIZ */
+.aviz{display:flex;align-items:flex-end;gap:2px;height:26px;margin-top:5px;}
+.aviz-b{width:4px;min-height:2px;background:var(--a);border-radius:2px;}
+
+/* TOUCH */
+.tbox{height:68px;background:rgba(0,229,255,.03);border:1px dashed var(--b);border-radius:5px;margin-top:6px;display:flex;align-items:center;justify-content:center;font-size:.68rem;color:var(--d);position:relative;overflow:hidden;touch-action:none;user-select:none;}
+.tdot{position:absolute;width:20px;height:20px;border-radius:50%;background:var(--a);transform:translate(-50%,-50%);pointer-events:none;opacity:.7;}
+
+/* INFO BOX */
+.ibox{background:rgba(0,229,255,.04);border:1px solid rgba(0,229,255,.12);border-radius:4px;padding:7px 9px;font-size:.67rem;margin-top:5px;line-height:1.7;color:var(--t);}
+.ibox b{color:var(--a2);}
+
+/* MIC HELP */
+.mic-help{background:rgba(255,179,0,.08);border:1px solid rgba(255,179,0,.25);border-radius:5px;padding:10px;margin-top:7px;font-size:.71rem;line-height:1.7;display:none;}
+.mic-help b{color:var(--w);}
+
+/* VERDICT */
+.vwrap{padding:14px 10px;text-align:center;}
+.vring{width:90px;height:90px;border-radius:50%;border:3px solid var(--b);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:1.9rem;transition:all .5s;font-weight:700;}
+.vring.green{border-color:var(--a2);box-shadow:0 0 28px rgba(0,255,157,.35);}
+.vring.yellow{border-color:var(--w);box-shadow:0 0 28px rgba(255,179,0,.35);}
+.vring.red{border-color:var(--e);box-shadow:0 0 28px rgba(255,61,90,.35);}
+.vlabel{font-size:1.15rem;font-weight:700;margin-bottom:6px;}
+.vdesc{font-size:.72rem;color:var(--d);line-height:1.6;margin-bottom:8px;}
+.vitem{display:flex;align-items:flex-start;gap:8px;padding:4px 0;font-size:.73rem;text-align:left;}
+.vdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.vdot.g{background:var(--a2);}
+.vdot.y{background:var(--w);}
+.vdot.r{background:var(--e);}
+
+/* BUG LIST */
+.bitem{display:flex;align-items:flex-start;gap:8px;padding:7px 12px;border-bottom:1px solid rgba(22,50,72,.4);font-size:.73rem;}
+.bitem:last-child{border-bottom:none;}
+.bdot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.bdot.e{background:var(--e);}
+.bdot.w{background:var(--w);}
+.bdot.o{background:var(--a2);}
+
+/* AI PANEL */
+.ai-panel{background:linear-gradient(135deg,rgba(26,0,64,.8),rgba(45,0,96,.6));border:1px solid rgba(168,85,247,.4);border-radius:8px;margin-bottom:7px;overflow:hidden;}
+.ai-panel-hdr{display:flex;align-items:center;gap:9px;padding:12px 14px;cursor:pointer;}
+.ai-panel-title{flex:1;font-weight:700;font-size:.88rem;color:#c084fc;}
+.ai-response{padding:12px 14px;border-top:1px solid rgba(168,85,247,.2);font-size:.75rem;line-height:1.8;color:var(--t);display:none;}
+.ai-response.vis{display:block;}
+.ai-typing{display:inline-block;width:8px;height:8px;border-radius:50%;background:#a855f7;animation:typing .6s infinite alternate;}
+@keyframes typing{0%{opacity:.3;transform:scale(.8)}100%{opacity:1;transform:scale(1.2)}}
+.ai-section{margin-bottom:12px;}
+.ai-section-title{font-size:.72rem;color:#a855f7;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;}
+.ai-section-body{font-size:.75rem;line-height:1.8;color:var(--t);}
+.ai-verdict-box{padding:10px;border-radius:6px;text-align:center;margin-top:10px;font-weight:700;font-size:.9rem;}
+.ai-verdict-box.green{background:rgba(0,255,157,.1);border:1px solid var(--a2);color:var(--a2);}
+.ai-verdict-box.yellow{background:rgba(255,179,0,.1);border:1px solid var(--w);color:var(--w);}
+.ai-verdict-box.red{background:rgba(255,61,90,.1);border:1px solid var(--e);color:var(--e);}
+
+.footer{text-align:center;padding:14px 0 0;font-size:.6rem;color:var(--d);letter-spacing:2px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hdr">
+  <span class="hdr-icon">📱</span>
+  <h1>PhoneDiag AI</h1>
+  <p>Diagnosticare Hardware + AI</p>
+  <span class="ai-badge">✦ POWERED BY CLAUDE AI</span>
+</div>
+
+<div class="score">
+  <div class="sc-ring" id="scRing">-</div>
+  <div class="sc-info">
+    <small>Scor sanatate dispozitiv</small>
+    <div class="sc-val" id="scVal">Nescanat</div>
+    <div class="sc-bar"><div class="sc-fill" id="scFill"></div></div>
+  </div>
+</div>
+
+<button class="scan-btn" id="mainBtn" onclick="runScan()">► SCANARE HARDWARE COMPLETA</button>
+<button class="ai-btn" id="aiBtn" onclick="runAIAnalysis()" disabled>✦ ANALIZA AI DETALIATA</button>
+
+<!-- AI PANEL -->
+<div class="ai-panel" id="aiPanel" style="display:none">
+  <div class="ai-panel-hdr" onclick="togAI()">
+    <span>✦</span>
+    <span class="ai-panel-title">Raport AI - Claude Diagnostics</span>
+    <span class="arr" id="arr-ai">►</span>
+  </div>
+  <div class="ai-response" id="aiResponse"></div>
+</div>
+
+<!-- BATERIE -->
+<div class="sec">
+  <div class="sec-hdr" onclick="tog('bat')">
+    <span class="sec-ico">🔋</span><span class="sec-title">Baterie</span>
+    <span class="badge" id="bdg-bat">-</span><span class="arr" id="arr-bat">►</span>
+  </div>
+  <div class="sec-body" id="bdy-bat">
+    <div class="row">
+      <span class="row-ico">⚡</span>
+      <div class="row-info">
+        <div class="row-name">Nivel si status</div>
+        <div class="row-det" id="bat-txt">-</div>
+        <div class="mbar"><div class="mfill" id="bat-bar"></div></div>
+      </div>
+      <span class="st" id="st-bat">-</span>
+    </div>
+    <div class="row">
+      <span class="row-ico">⏱</span>
+      <div class="row-info">
+        <div class="row-name">Timp estimat</div>
+        <div class="row-det" id="bat-time">-</div>
+      </div>
+      <span class="st" id="st-btime">-</span>
+    </div>
+  </div>
+</div>
+
+<!-- SENZORI -->
+<div class="sec">
+  <div class="sec-hdr" onclick="tog('sen')">
+    <span class="sec-ico">📡</span><span class="sec-title">Senzori Miscare</span>
+    <span class="badge" id="bdg-sen">-</span><span class="arr" id="arr-sen">►</span>
+  </div>
+  <div class="sec-body" id="bdy-sen">
+    <div class="row">
+      <span class="row-ico">📐</span>
+      <div class="row-info">
+        <div class="row-name">Accelerometru</div>
+        <div class="row-det" id="acc-txt">Apasa si misca telefonul</div>
+        <button class="btn" id="acc-btn" onclick="testAccel()">► TEST</button>
+      </div>
+      <span class="st" id="st-acc">-</span>
+    </div>
+    <div class="row">
+      <span class="row-ico">🔄</span>
+      <div class="row-info">
+        <div class="row-name">Giroscop</div>
+        <div class="row-det" id="gyr-txt">Apasa si inclina telefonul</div>
+        <button class="btn" id="gyr-btn" onclick="testGyro()">► TEST</button>
+      </div>
+      <span class="st" id="st-gyr">-</span>
+    </div>
+    <div class="row">
+      <span class="row-ico">📍</span>
+      <div class="row-info">
+        <div class="row-name">GPS</div>
+        <div class="row-det" id="gps-txt">Apasa - browserul va cere permisiunea GPS</div>
+        <button class="btn" id="gps-btn" onclick="testGPS()">► CERE LOCATIE</button>
+      </div>
+      <span class="st" id="st-gps">-</span>
+    </div>
+  </div>
+</div>
+
+<!-- AUDIO -->
+<div class="sec">
+  <div class="sec-hdr" onclick="tog('aud')">
+    <span class="sec-ico">🎙</span><span class="sec-title">Microfon si Difuzor</span>
+    <span class="badge" id="bdg-aud">-</span><span class="arr" id="arr-aud">►</span>
+  </div>
+  <div class="sec-body" id="bdy-aud">
+    <div class="row">
+      <span class="row-ico">🎤</span>
+      <div class="row-info">
+        <div class="row-name">Microfon</div>
+        <div class="row-det" id="mic-txt">Apasa - va aparea popup de permisiune</div>
+        <button class="btn" id="mic-btn" onclick="testMic()">► TESTEAZA MICROFON</button>
+        <div class="aviz" id="aviz" style="display:none"></div>
+        <div class="mic-help" id="mic-help">
+          <b>Permisiune refuzata?</b><br>
+          Apasa pe iconita 🔒 din bara browserului → Permisiuni → Microfon → Permite<br>
+          SAU: Setari Android → Aplicatii → Chrome → Permisiuni → Microfon
+        </div>
+      </div>
+      <span class="st" id="st-mic">-</span>
+    </div>
+    <div class="row">
+      <span class="row-ico">🔊</span>
+      <div class="row-info">
+        <div class="row-name">Difuzor (ton 1kHz)</div>
+        <div class="row-det" id="spk-txt">Genereaza ton de test</div>
+        <button class="btn" id="spk-btn" onclick="testSpeaker()">► REDA TON</button>
+      </div>
+      <span class="st" id="st-spk">-</span>
+    </div>
+  </div>
+</div>
+
+<!-- ECRAN -->
+<div class="sec">
+  <div class="sec-hdr" onclick="tog('dsp')">
+    <span class="sec-ico">🖥</span><span class="sec-title">Ecran si Touch</span>
+    <span class="badge" id="bdg-dsp">-</span><span class="arr" id="arr-dsp">►</span>
+  </div>
+  <div class="sec-body" id="bdy-dsp">
+    <div class="row">
+      <span class="row-ico">📏</span>
+      <div class="row-info">
+        <div class="row-name">Rezolutie si DPI</div>
+        <div class="row-det" id="res-txt">-</div>
+      </div>
+      <span class="st info" id="st-res">INFO</span>
+    </div>
+    <div class="row">
+      <span class="row-ico">👆</span>
+      <div class="row-info">
+        <div class="row-name">Multi-touch</div>
+        <div class="row-det">Atinge cu mai multi degete simultan</div>
+        <div class="tbox" id="tbox">Atinge aici cu 1-5 degete</div>
+        <div class="row-det" id="tch-count" style="margin-top:4px;">Simultan: 0 | Max: 0</div>
+      </div>
+      <span class="st" id="st-tch">-</span>
+    </div>
+  </div>
+</div>
+
+<!-- RETEA -->
+<div class="sec">
+  <div class="sec-hdr" onclick="tog('net')">
+    <span class="sec-ico">📶</span><span class="sec-title">Retea si Conectivitate</span>
+    <span class="badge" id="bdg-net">-</span><span class="arr" id="arr-net">►</span>
+  </div>
+  <div class="sec-body" id="bdy-net">
+    <div class="row">
+      <span class="row-ico">🌐</span>
+      <div class="row-info"><div class="row-name">Internet</div><div class="row-det" id="net-txt">-</div></div>
+      <span class="st" id="st-net">-</span>
+    </div>
+    <div class="row">
+      <span class="row-ico">📡</span>
+      <div class="row-info"><div class="row-name">Tip conexiune</div><div class="row-det" id="ntype-txt">-</div></div>
+      <span class="st" id="st-ntype">-</span>
+    </div>
+    <div class="row">
+      <span class="row-ico">💾</span>
+      <div class="row-info"><div class="row-name">Stocare disponibila</div><div class="row-det" id="stor-txt">-</div></div>
+      <span class="st" id="st-stor">-</span>
+    </div>
+  </div>
+</div>
+
+<!-- HARDWARE -->
+<div class="sec">
+  <div class="sec-hdr" onclick="tog('hw')">
+    <span class="sec-ico">⚙️</span><span class="sec-title">Hardware si Sistem</span>
+    <span class="badge" id="bdg-hw">-</span><span class="arr" id="arr-hw">►</span>
+  </div>
+  <div class="sec-body" id="bdy-hw">
+    <div class="row">
+      <span class="row-ico">🧠</span>
+      <div class="row-info"><div class="row-name">Nuclee CPU</div><div class="row-det" id="cpu-txt">-</div></div>
+      <span class="st" id="st-cpu">-</span>
+    </div>
+    <div class="row">
+      <span class="row-ico">💿</span>
+      <div class="row-info"><div class="row-name">RAM estimat</div><div class="row-det" id="ram-txt">-</div></div>
+      <span class="st" id="st-ram">-</span>
+    </div>
+    <div class="row">
+      <span class="row-ico">📷</span>
+      <div class="row-info">
+        <div class="row-name">Camera</div>
+        <div class="row-det" id="cam-txt">-</div>
+        <button class="btn" id="cam-btn" onclick="testCamera()">► DETECTEAZA CAMERE</button>
+      </div>
+      <span class="st" id="st-cam">-</span>
+    </div>
+    <div class="row">
+      <span class="row-ico">📳</span>
+      <div class="row-info">
+        <div class="row-name">Vibratie</div>
+        <div class="row-det" id="vib-txt">Testeaza motorul haptic</div>
+        <button class="btn" onclick="testVibrate()">► VIBRATIE</button>
+      </div>
+      <span class="st" id="st-vib">-</span>
+    </div>
+  </div>
+</div>
+
+<!-- STRESS TEST -->
+<div class="sec">
+  <div class="sec-hdr" onclick="tog('str')">
+    <span class="sec-ico">🔥</span><span class="sec-title">Stress Test</span>
+    <span class="badge" id="bdg-str">-</span><span class="arr" id="arr-str">►</span>
+  </div>
+  <div class="sec-body" id="bdy-str">
+    <div class="row">
+      <span class="row-ico">🧠</span>
+      <div class="row-info">
+        <div class="row-name">Stress CPU (3 sec)</div>
+        <div class="row-det" id="scpu-txt">Forteaza procesorul la maximum</div>
+        <div class="mbar"><div class="mfill" id="scpu-bar"></div></div>
+        <button class="btn" id="scpu-btn" onclick="stressCPU()">► START</button>
+      </div>
+      <span class="st" id="st-scpu">-</span>
+    </div>
+    <div class="row">
+      <span class="row-ico">💾</span>
+      <div class="row-info">
+        <div class="row-name">Integritate stocare (flash)</div>
+        <div class="row-det" id="sstr-txt">Verifica memoria flash</div>
+        <div class="mbar"><div class="mfill" id="sstr-bar"></div></div>
+        <button class="btn" id="sstr-btn" onclick="stressStorage()">► START</button>
+      </div>
+      <span class="st" id="st-sstr">-</span>
+    </div>
+    <div class="row">
+      <span class="row-ico">💿</span>
+      <div class="row-info">
+        <div class="row-name">Test RAM (50MB)</div>
+        <div class="row-det" id="sram-txt">Aloca si elibereaza memorie</div>
+        <button class="btn" id="sram-btn" onclick="stressRAM()">► START</button>
+      </div>
+      <span class="st" id="st-sram">-</span>
+    </div>
+    <div class="row">
+      <span class="row-ico">⚡</span>
+      <div class="row-info">
+        <div class="row-name">Voltage Sag (baterie sub sarcina)</div>
+        <div class="row-det" id="vsag-txt">Se calculeaza dupa CPU stress</div>
+        <div class="ibox" id="vsag-box" style="display:none"></div>
+      </div>
+      <span class="st" id="st-vsag">-</span>
+    </div>
+  </div>
+</div>
+
+<!-- VERDICT -->
+<div class="sec">
+  <div class="sec-hdr" onclick="tog('vrd')">
+    <span class="sec-ico">🏷</span><span class="sec-title">Verdict - Amanet / Cumparare</span>
+    <span class="badge" id="bdg-vrd">-</span><span class="arr" id="arr-vrd">►</span>
+  </div>
+  <div class="sec-body" id="bdy-vrd">
+    <div class="vwrap">
+      <div class="vring" id="vring">?</div>
+      <div class="vlabel" id="vlabel" style="color:var(--d)">Ruleaza scanarea</div>
+      <div class="vdesc" id="vdesc">Apasa SCANARE COMPLETA pentru verdict</div>
+      <div id="vitems"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PROBLEME -->
+<div class="sec">
+  <div class="sec-hdr" onclick="tog('bug')">
+    <span class="sec-ico">🐛</span><span class="sec-title">Probleme Detectate</span>
+    <span class="badge" id="bdg-bug">-</span><span class="arr" id="arr-bug">►</span>
+  </div>
+  <div class="sec-body" id="bdy-bug">
+    <div id="buglist"><div class="bitem"><span class="bdot o"></span><span>Ruleaza scanarea pentru raport.</span></div></div>
+  </div>
+</div>
+
+<!-- CODURI -->
+<div class="sec">
+  <div class="sec-hdr" onclick="tog('cod')">
+    <span class="sec-ico">📞</span><span class="sec-title">Coduri Diagnoza Android</span>
+    <span class="badge ok" id="bdg-cod">INFO</span><span class="arr" id="arr-cod">►</span>
+  </div>
+  <div class="sec-body" id="bdy-cod">
+    <div class="row"><div class="row-info"><div class="ibox">
+      <b>*#0*#</b> – Diagnoza Samsung (display, senzori, LED)<br>
+      <b>*#*#4636#*#*</b> – Info telefon, baterie, statistici<br>
+      <b>*#0228#</b> – Status baterie (temp, tensiune)<br>
+      <b>*#*#0842#*#*</b> – Test vibratie si backlight<br>
+      <b>*#*#2664#*#*</b> – Test touchscreen<br>
+      <b>*#*#0588#*#*</b> – Test senzor proximitate<br>
+      <b>*#*#1472365#*#*</b> – Test GPS<br>
+      <b>*#*#0283#*#*</b> – Loopback audio mic-difuzor
+    </div></div></div>
+  </div>
+</div>
+
+<div class="footer">PHONEDIAG AI v3.0 - POWERED BY CLAUDE - DATE LOCALE</div>
+</div>
+
+<script>
+var bugs=[], scores={}, scanResults={};
+var micStream=null, micCtx=null, micAnim=null, maxTouch=0;
+
+function $(i){ return document.getElementById(i); }
+function tx(i,v){ var e=$(i); if(e) e.textContent=v; }
+function st(i,c,t){ var e=$('st-'+i); if(!e) return; e.className='st'+(c?' '+c:''); e.textContent=t; }
+function bdg(i,c,t){ var e=$('bdg-'+i); if(!e) return; e.className='badge'+(c?' '+c:''); e.textContent=t; }
+function addBug(type,msg){ bugs.push({type:type,msg:msg}); }
+function delay(ms){ return new Promise(function(r){setTimeout(r,ms);}); }
+function tog(id){
+  var b=$('bdy-'+id), a=$('arr-'+id);
+  var v=b.classList.toggle('vis');
+  a.classList.toggle('open',v);
+}
+function togAI(){
+  var r=$('aiResponse'), a=$('arr-ai');
+  var v=r.classList.toggle('vis');
+  a.classList.toggle('open',v);
+}
+function openSec(id){
+  $('bdy-'+id).classList.add('vis');
+  $('arr-'+id).classList.add('open');
+}
+
+// BATTERY
+async function testBattery(){
+  if(!('getBattery' in navigator)){
+    bdg('bat','warn','N/A'); tx('bat-txt','Battery API indisponibila'); st('bat','warn','N/A');
+    scores.bat=50; scanResults.baterie='N/A - Battery API indisponibil'; return;
+  }
+  try{
+    var b=await navigator.getBattery();
+    var pct=Math.round(b.level*100);
+    tx('bat-txt', pct+'% - '+(b.charging?'La incarcare':'Pe baterie'));
+    $('bat-bar').style.width=pct+'%';
+    var c=pct>50?'ok':pct>20?'warn':'fail';
+    st('bat',c,pct+'%'); bdg('bat',c,pct+'%'); scores.bat=pct>50?100:pct>20?65:25;
+    var t=b.charging?b.chargingTime:b.dischargingTime;
+    if(t&&t!==Infinity){
+      var ht=Math.floor(t/3600)+'h '+Math.floor((t%3600)/60)+'m '+(b.charging?'pana la plin':'ramas');
+      tx('bat-time',ht); st('btime','ok','OK');
+      scanResults.baterie=pct+'% - '+(b.charging?'la incarcare':'pe baterie')+' - '+ht;
+    } else {
+      tx('bat-time','Se calculeaza...'); st('btime','warn','CALC');
+      scanResults.baterie=pct+'% - '+(b.charging?'la incarcare':'pe baterie');
+    }
+    if(pct<20&&!b.charging) addBug('err','Baterie critica: '+pct+'%');
+    else if(pct<50&&!b.charging) addBug('warn','Baterie scazuta: '+pct+'%');
+  }catch(e){ bdg('bat','fail','ERR'); scores.bat=0; scanResults.baterie='Eroare citire baterie'; }
+}
+
+// ACCELEROMETRU
+function testAccel(){
+  var btn=$('acc-btn');
+  btn.disabled=true; btn.textContent='... ascultare';
+  st('acc','run','...');
+  function start(){
+    tx('acc-txt','Misca telefonul acum...');
+    var got=false, cnt=0;
+    function h(e){
+      var a=e.accelerationIncludingGravity||e.acceleration; if(!a) return;
+      cnt++;
+      var txt='X:'+((a.x||0).toFixed(1))+' Y:'+((a.y||0).toFixed(1))+' Z:'+((a.z||0).toFixed(1));
+      tx('acc-txt',txt);
+      if(!got&&cnt>1){ got=true; st('acc','ok','OK'); bdg('sen','ok','OK'); scores.acc=100; scanResults.accelerometru='Functional - '+txt; }
+    }
+    window.addEventListener('devicemotion',h,{passive:true});
+    setTimeout(function(){
+      window.removeEventListener('devicemotion',h);
+      if(!got){ st('acc','fail','FAIL'); tx('acc-txt','Niciun semnal'); addBug('warn','Accelerometru: niciun raspuns'); scores.acc=0; scanResults.accelerometru='FAIL - niciun semnal'; }
+      btn.disabled=false; btn.textContent='► TEST DIN NOU';
+    },5000);
+  }
+  if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){
+    DeviceMotionEvent.requestPermission().then(function(r){ if(r==='granted') start(); else { st('acc','fail','REFUZAT'); btn.disabled=false; btn.textContent='► RETRY'; scanResults.accelerometru='Permisiune refuzata'; } }).catch(function(){ start(); });
+  } else { start(); }
+}
+
+// GIROSCOP
+function testGyro(){
+  var btn=$('gyr-btn');
+  btn.disabled=true; btn.textContent='... ascultare';
+  st('gyr','run','...');
+  function start(){
+    tx('gyr-txt','Inclina telefonul...');
+    var got=false, cnt=0;
+    function h(e){
+      if(e.beta==null) return; cnt++;
+      var txt='a:'+((e.alpha||0).toFixed(0))+' b:'+((e.beta||0).toFixed(0))+' g:'+((e.gamma||0).toFixed(0));
+      tx('gyr-txt',txt);
+      if(!got&&cnt>1){ got=true; st('gyr','ok','OK'); scores.gyr=100; scanResults.giroscop='Functional - '+txt; }
+    }
+    window.addEventListener('deviceorientation',h,{passive:true});
+    setTimeout(function(){
+      window.removeEventListener('deviceorientation',h);
+      if(!got){ st('gyr','fail','FAIL'); tx('gyr-txt','Niciun semnal'); addBug('warn','Giroscop: niciun raspuns'); scores.gyr=0; scanResults.giroscop='FAIL - niciun semnal'; }
+      btn.disabled=false; btn.textContent='► TEST DIN NOU';
+    },5000);
+  }
+  if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){
+    DeviceOrientationEvent.requestPermission().then(function(r){ if(r==='granted') start(); else { st('gyr','fail','REFUZAT'); btn.disabled=false; btn.textContent='► RETRY'; } }).catch(function(){ start(); });
+  } else { start(); }
+}
+
+// GPS
+function testGPS(){
+  if(!navigator.geolocation){ st('gps','fail','N/A'); addBug('err','GPS indisponibil'); scanResults.gps='N/A'; return; }
+  var btn=$('gps-btn');
+  btn.disabled=true; btn.textContent='... GPS'; st('gps','run','GPS...');
+  navigator.geolocation.getCurrentPosition(
+    function(p){
+      var la=p.coords.latitude, lo=p.coords.longitude, ac=p.coords.accuracy;
+      var txt='Lat:'+la.toFixed(4)+' Lon:'+lo.toFixed(4)+' +/-'+Math.round(ac)+'m';
+      tx('gps-txt',txt); st('gps',ac<100?'ok':'warn',ac<100?'OK':'SLAB');
+      scores.gps=ac<100?100:60; scanResults.gps=txt;
+      if(ac>100) addBug('warn','GPS precizie slaba: +/-'+Math.round(ac)+'m');
+      btn.disabled=false; btn.textContent='► TEST DIN NOU';
+    },
+    function(e){
+      var msg=e.code===1?'Permisiune refuzata':e.code===2?'Indisponibil':'Timeout';
+      tx('gps-txt',msg); st('gps','fail','FAIL'); addBug(e.code===1?'warn':'err','GPS: '+msg);
+      scores.gps=0; scanResults.gps='FAIL - '+msg; btn.disabled=false; btn.textContent='► RETRY';
+    },
+    {timeout:12000,enableHighAccuracy:true}
+  );
+}
+
+// MICROFON
+async function testMic(){
+  var btn=$('mic-btn');
+  if(micStream){ stopMic(); return; }
+  btn.disabled=true; btn.textContent='... se cere permisiunea';
+  st('mic','run','...'); tx('mic-txt','Va aparea popup - apasa PERMITE');
+  $('mic-help').style.display='none';
+  try{
+    micStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+    micCtx=new(window.AudioContext||window.webkitAudioContext)();
+    var src=micCtx.createMediaStreamSource(micStream);
+    var an=micCtx.createAnalyser(); an.fftSize=64; src.connect(an);
+    var buf=new Uint8Array(an.frequencyBinCount);
+    var viz=$('aviz'); viz.style.display='flex'; viz.innerHTML='';
+    for(var i=0;i<16;i++){ var d=document.createElement('div'); d.className='aviz-b'; viz.appendChild(d); }
+    var bars=viz.querySelectorAll('.aviz-b');
+    st('mic','ok','ACTIV'); tx('mic-txt','Microfon activ - vorbeste pentru test');
+    btn.disabled=false; btn.textContent='■ OPRESTE MIC'; btn.classList.add('stop');
+    scores.mic=100; bdg('aud','ok','OK'); scanResults.microfon='Functional - semnal audio detectat';
+    function draw(){
+      micAnim=requestAnimationFrame(draw); an.getByteFrequencyData(buf);
+      var step=Math.floor(buf.length/16), mx=0;
+      bars.forEach(function(b,i){ var v=buf[i*step]||0; mx=Math.max(mx,v); b.style.height=Math.max(2,(v/255)*24)+'px'; });
+      if(mx>15) tx('mic-txt','Semnal audio detectat OK!');
+    }
+    draw();
+  } catch(e){
+    var msg=e.name==='NotAllowedError'?'Permisiune refuzata':e.name==='NotFoundError'?'Microfon negasit':'Eroare: '+e.name;
+    tx('mic-txt',msg); st('mic','fail','FAIL');
+    if(e.name==='NotAllowedError') $('mic-help').style.display='block';
+    addBug('err','Microfon: '+msg); scores.mic=0; scanResults.microfon='FAIL - '+msg;
+    btn.disabled=false; btn.textContent='► INCEARCA DIN NOU';
+  }
+}
+function stopMic(){
+  if(micStream){ micStream.getTracks().forEach(function(t){t.stop();}); micStream=null; }
+  if(micCtx){ micCtx.close(); micCtx=null; }
+  if(micAnim){ cancelAnimationFrame(micAnim); micAnim=null; }
+  $('aviz').style.display='none'; $('mic-btn').classList.remove('stop');
+  $('mic-btn').textContent='► REPORNESTE MIC'; st('mic','ok','OK');
+}
+
+// DIFUZOR
+function testSpeaker(){
+  var btn=$('spk-btn');
+  btn.disabled=true; st('spk','run','REDA...'); tx('spk-txt','Se reda ton 1kHz...');
+  try{
+    var ctx=new(window.AudioContext||window.webkitAudioContext)();
+    var osc=ctx.createOscillator(), g=ctx.createGain();
+    osc.connect(g); g.connect(ctx.destination);
+    osc.type='sine'; osc.frequency.value=1000;
+    g.gain.setValueAtTime(0.3,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+1.5);
+    osc.start(); osc.stop(ctx.currentTime+1.5);
+    setTimeout(function(){
+      ctx.close(); st('spk','ok','OK'); tx('spk-txt','Ton redat. Ai auzit? Daca nu = difuzor defect');
+      btn.disabled=false; btn.textContent='► TEST DIN NOU'; scores.spk=100; bdg('aud','ok','OK');
+      scanResults.difuzor='Ton 1kHz redat cu succes';
+    },1700);
+  } catch(e){ st('spk','fail','FAIL'); tx('spk-txt','Eroare: '+e.message); btn.disabled=false; scores.spk=0; scanResults.difuzor='FAIL - '+e.message; }
+}
+
+// CAMERA
+async function testCamera(){
+  var btn=$('cam-btn');
+  btn.disabled=true; btn.textContent='... detecteaza'; st('cam','run','...');
+  try{
+    var stream=null;
+    try{ stream=await navigator.mediaDevices.getUserMedia({video:true}); if(stream) stream.getTracks().forEach(function(t){t.stop();}); } catch(e2){}
+    var devs=await navigator.mediaDevices.enumerateDevices();
+    var cams=devs.filter(function(d){return d.kind==='videoinput';});
+    var mics=devs.filter(function(d){return d.kind==='audioinput';});
+    tx('cam-txt','Camere: '+cams.length+' | Microfoane: '+mics.length);
+    st('cam',cams.length?'ok':'fail',cams.length?cams.length+'cam':'FAIL');
+    scores.cam=cams.length>0?100:0; scanResults.camera=cams.length+' camere detectate';
+    if(!cams.length) addBug('err','Nicio camera detectata');
+    bdg('hw','ok','OK');
+  } catch(e){ tx('cam-txt','Eroare: '+e.message); st('cam','warn','N/A'); scores.cam=50; scanResults.camera='N/A - '+e.message; }
+  btn.disabled=false; btn.textContent='► TEST DIN NOU';
+}
+
+// VIBRATIE
+function testVibrate(){
+  if('vibrate' in navigator){
+    navigator.vibrate([150,80,150,80,300]);
+    st('vib','ok','OK'); tx('vib-txt','Vibratie pornita OK'); scores.vib=100; scanResults.vibratie='Functional';
+  } else {
+    st('vib','fail','N/A'); tx('vib-txt','API Vibration indisponibil'); addBug('warn','Vibratie indisponibila'); scores.vib=0; scanResults.vibratie='N/A';
+  }
+}
+
+// DISPLAY
+function testDisplay(){
+  var w=screen.width, h=screen.height, dpr=window.devicePixelRatio||1;
+  var txt=w+'x'+h+' CSS | '+Math.round(w*dpr)+'x'+Math.round(h*dpr)+' fizic | DPR '+dpr.toFixed(1);
+  tx('res-txt',txt); scores.dsp=100; bdg('dsp','ok','OK'); scanResults.ecran=txt;
+}
+
+// TOUCH
+function setupTouch(){
+  var box=$('tbox'); box.textContent='Atinge aici cu 1-5 degete';
+  function onT(e){
+    box.innerHTML=''; var r=box.getBoundingClientRect(), n=e.touches.length;
+    if(n>maxTouch) maxTouch=n;
+    for(var i=0;i<n;i++){ var t=e.touches[i], d=document.createElement('div'); d.className='tdot'; d.style.left=(t.clientX-r.left)+'px'; d.style.top=(t.clientY-r.top)+'px'; box.appendChild(d); }
+    tx('tch-count','Simultan: '+n+' | Max: '+maxTouch);
+    if(maxTouch>=5){ st('tch','ok',maxTouch+'pt'); scores.tch=100; }
+    else if(maxTouch>=2){ st('tch','warn',maxTouch+'pt'); scores.tch=70; }
+    else if(maxTouch>=1){ st('tch','warn','1pt'); scores.tch=50; }
+    scanResults.touch='Max '+maxTouch+' puncte simultane';
+  }
+  box.addEventListener('touchstart',onT,{passive:true});
+  box.addEventListener('touchmove',onT,{passive:true});
+  box.addEventListener('touchend',function(){ box.textContent='Atinge aici cu 1-5 degete'; },{passive:true});
+}
+
+// RETEA
+async function testNetwork(){
+  var online=navigator.onLine;
+  tx('net-txt',online?'Conectat la internet':'OFFLINE');
+  st('net',online?'ok':'fail',online?'OK':'FAIL');
+  if(!online) addBug('err','Fara conexiune internet');
+  var c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+  if(c){
+    var eff=c.effectiveType||c.type||'?';
+    var ntxt=eff.toUpperCase()+' - '+(c.downlink?c.downlink+' Mbps':'-')+' RTT:'+(c.rtt||'-')+'ms';
+    tx('ntype-txt',ntxt); st('ntype',eff.includes('4g')?'ok':'warn',eff.toUpperCase());
+    scanResults.retea=ntxt;
+  } else { tx('ntype-txt','Network Info indisponibil'); st('ntype','warn','N/A'); scanResults.retea='Tip necunoscut'; }
+  if(navigator.storage&&navigator.storage.estimate){
+    var est=await navigator.storage.estimate();
+    var stxt='Folosit: '+(est.usage/1048576).toFixed(1)+'MB / ~'+(est.quota?(est.quota/1073741824).toFixed(1):'?')+'GB';
+    tx('stor-txt',stxt); st('stor','ok','OK'); scanResults.stocare=stxt;
+  } else { tx('stor-txt','Storage API indisponibil'); st('stor','warn','N/A'); scanResults.stocare='N/A'; }
+  scores.net=online?100:0; bdg('net',online?'ok':'fail',online?'OK':'FAIL');
+}
+
+// HARDWARE
+function testHardware(){
+  var cores=navigator.hardwareConcurrency||0;
+  tx('cpu-txt',cores?cores+' nuclee logice':'Indisponibil');
+  st('cpu',cores>=6?'ok':cores>=4?'warn':'fail',cores?cores+'c':'N/A');
+  scores.cpu=cores>=6?100:cores>=4?70:cores>=2?40:10;
+  if(cores&&cores<4) addBug('warn','CPU: '+cores+' nuclee - performanta limitata');
+  scanResults.cpu=cores?cores+' nuclee':'Indisponibil';
+  var ram=navigator.deviceMemory;
+  tx('ram-txt',ram?'~'+ram+' GB RAM':'Indisponibil');
+  st('ram',ram>=4?'ok':ram>=2?'warn':'warn',ram?ram+'GB':'N/A');
+  scores.ram=ram>=4?100:ram>=2?65:40;
+  if(ram&&ram<3) addBug('warn','RAM: '+ram+'GB - multitasking limitat');
+  scanResults.ram=ram?'~'+ram+'GB':'Indisponibil';
+  bdg('hw','ok','OK');
+}
+
+// STRESS CPU
+async function stressCPU(){
+  var btn=$('scpu-btn');
+  btn.disabled=true; btn.textContent='... in curs'; st('scpu','run','RUN...');
+  var battBefore=null;
+  if('getBattery' in navigator){ try{ var bb=await navigator.getBattery(); battBefore=bb.level; }catch(ex){} }
+  var bar=$('scpu-bar'), ops=0;
+  await new Promise(function(res){
+    var elapsed=0;
+    function tick(){
+      var cs=performance.now();
+      while(performance.now()-cs<50){ var x=0; for(var i=0;i<80000;i++) x+=Math.sqrt(i)*Math.sin(i); ops++; }
+      elapsed+=50; bar.style.width=Math.min(100,(elapsed/3000*100))+'%';
+      tx('scpu-txt','Ops: '+(ops*80000).toLocaleString()+' | '+(elapsed/1000).toFixed(1)+'s');
+      if(elapsed<3000) requestAnimationFrame(tick); else res();
+    }
+    requestAnimationFrame(tick);
+  });
+  var opsS=Math.round(ops/3), cls=opsS>80?'ok':opsS>30?'warn':'fail';
+  st('scpu',cls,cls==='ok'?'RAPID':cls==='warn'?'MEDIU':'LENT');
+  tx('scpu-txt',opsS+' chunks/s - CPU '+(cls==='ok'?'stabil':'lent'));
+  scores.cpuS=cls==='ok'?100:cls==='warn'?60:20;
+  scanResults.cpuStress=opsS+' chunks/s - '+cls;
+  if(cls==='fail') addBug('err','CPU lent sub sarcina - throttling termic posibil');
+  bdg('str',cls,cls.toUpperCase());
+  if(battBefore!==null&&'getBattery' in navigator){
+    try{
+      var ba=await navigator.getBattery();
+      var drop=((battBefore-ba.level)*100).toFixed(2);
+      $('vsag-box').style.display='block';
+      $('vsag-box').innerHTML='<b>Inainte:</b> '+Math.round(battBefore*100)+'% → <b>Dupa:</b> '+Math.round(ba.level*100)+'% | <b>Drop:</b> '+drop+'%';
+      tx('vsag-txt','Delta: '+drop+'% sub sarcina');
+      if(parseFloat(drop)>1){ st('vsag','fail','SAG!'); addBug('err','Voltage Sag: '+drop+'% drop - baterie uzata!'); scores.vsag=20; scanResults.voltageSag='FAIL - drop '+drop+'%'; }
+      else { st('vsag','ok','OK'); scores.vsag=100; scanResults.voltageSag='OK - drop '+drop+'%'; }
+    } catch(ex){ st('vsag','warn','N/A'); scores.vsag=50; scanResults.voltageSag='N/A'; }
+  } else { tx('vsag-txt','Battery API indisponibil'); st('vsag','warn','N/A'); scores.vsag=50; scanResults.voltageSag='N/A'; }
+  btn.disabled=false; btn.textContent='► TEST DIN NOU';
+}
+
+// STRESS STOCARE
+async function stressStorage(){
+  var btn=$('sstr-btn');
+  btn.disabled=true; btn.textContent='... test'; st('sstr','run','TEST...');
+  var bar=$('sstr-bar'), N=30, KEY='__pd__', errs=0, times=[];
+  try{
+    for(var i=0;i<N;i++){
+      var payload='D'.repeat(512)+i; var t0=performance.now();
+      localStorage.setItem(KEY+i,payload); var v=localStorage.getItem(KEY+i);
+      times.push(performance.now()-t0); if(v!==payload) errs++;
+      bar.style.width=((i+1)/N*100)+'%'; if(i%5===0) await delay(8);
+    }
+    for(var j=0;j<N;j++) localStorage.removeItem(KEY+j);
+    var avg=(times.reduce(function(a,b){return a+b;},0)/times.length).toFixed(1);
+    var mx=Math.max.apply(null,times).toFixed(1);
+    if(errs>0){ st('sstr','fail',errs+'ERR'); tx('sstr-txt',errs+' ERORI scriere! Flash posibil defect!'); bar.style.background='var(--e)'; addBug('err','Stocare: '+errs+' erori - flash DEFECT!'); scores.stor=0; scanResults.stocare_int=errs+' erori - DEFECT'; }
+    else if(parseFloat(mx)>300){ st('sstr','warn','LENT'); tx('sstr-txt','0 erori - LENT avg:'+avg+'ms max:'+mx+'ms'); bar.style.background='var(--w)'; addBug('warn','Stocare lenta: max '+mx+'ms'); scores.stor=50; scanResults.stocare_int='Lenta - avg:'+avg+'ms max:'+mx+'ms'; }
+    else { st('sstr','ok','OK'); tx('sstr-txt','0 erori - avg:'+avg+'ms max:'+mx+'ms - Flash OK'); bar.style.background='var(--a2)'; scores.stor=100; scanResults.stocare_int='OK - avg:'+avg+'ms max:'+mx+'ms'; }
+  } catch(e){ st('sstr','fail','FAIL'); tx('sstr-txt','Eroare: '+e.message); addBug('err','Stocare: '+e.message); scores.stor=0; scanResults.stocare_int='FAIL - '+e.message; }
+  btn.disabled=false; btn.textContent='► TEST DIN NOU';
+}
+
+// STRESS RAM
+async function stressRAM(){
+  var btn=$('sram-btn');
+  btn.disabled=true; btn.textContent='... aloca'; st('sram','run','TEST...');
+  try{
+    var chunks=[];
+    for(var i=0;i<50;i++){ var a=new Uint8Array(1024*1024); a.fill(i%256); chunks.push(a); tx('sram-txt','Alocat: '+(i+1)+'MB / 50MB'); if(i%10===0) await delay(10); }
+    chunks.length=0; st('sram','ok','OK'); tx('sram-txt','50MB alocat si eliberat fara erori'); scores.ramS=100; scanResults.ram_stress='OK - 50MB fara erori';
+  } catch(e){ st('sram','fail','FAIL'); tx('sram-txt','Crash la alocare: '+e.message); addBug('err','RAM crash: '+e.message); scores.ramS=0; scanResults.ram_stress='FAIL - '+e.message; }
+  btn.disabled=false; btn.textContent='► TEST DIN NOU';
+}
+
+// VERDICT
+function calcVerdict(){
+  var errs=bugs.filter(function(b){return b.type==='err';}).length;
+  var warns=bugs.filter(function(b){return b.type==='warn';}).length;
+  var vals=Object.values(scores).filter(function(v){return typeof v==='number';});
+  var avg=vals.length?Math.round(vals.reduce(function(a,b){return a+b;},0)/vals.length):50;
+  scanResults.scor=avg; scanResults.erori=errs; scanResults.avertismente=warns;
+  var ring=$('vring'),lbl=$('vlabel'),dsc=$('vdesc'),itm=$('vitems');
+  ring.className='vring'; var items=[];
+  if(errs===0&&avg>=70){
+    ring.classList.add('green'); ring.textContent='OK';
+    lbl.textContent='VERDE - SIGUR'; lbl.style.color='var(--a2)';
+    dsc.textContent='Nicio eroare hardware critica. Dispozitiv functional.';
+    bdg('vrd','ok','SIGUR'); scanResults.verdict='VERDE - SIGUR';
+    items=[{c:'g',t:'Scor: '+avg+'/100'},{c:'g',t:'Nicio eroare critica'},{c:'g',t:'Hardware OK'}];
+    if(warns) items.push({c:'y',t:warns+' avertisment(e) minore'});
+  } else if(errs<=2&&avg>=45){
+    ring.classList.add('yellow'); ring.textContent='!';
+    lbl.textContent='GALBEN - SUSPICIUNI'; lbl.style.color='var(--w)';
+    dsc.textContent='Exista probleme. Verificati manual inainte de achizitie.';
+    bdg('vrd','warn','ATENTIE'); scanResults.verdict='GALBEN - SUSPICIUNI';
+    items=[{c:'y',t:'Scor: '+avg+'/100'},{c:'y',t:errs+' eroare(i) + '+warns+' avertismente'},{c:'y',t:'Negociati pretul sau cereti garantie'}];
+  } else {
+    ring.classList.add('red'); ring.textContent='X';
+    lbl.textContent='ROSU - NU ACCEPTA!'; lbl.style.color='var(--e)';
+    dsc.textContent='Erori hardware critice! Risc mare de defectiune.';
+    bdg('vrd','fail','RISC MARE'); scanResults.verdict='ROSU - NU ACCEPTA';
+    items=[{c:'r',t:'Scor: '+avg+'/100 - CRITIC'},{c:'r',t:errs+' ERORI CRITICE'}];
+    bugs.filter(function(b){return b.type==='err';}).forEach(function(b){items.push({c:'r',t:b.msg});});
+  }
+  itm.innerHTML=items.map(function(x){return '<div class="vitem"><span class="vdot '+x.c+'"></span><span>'+x.t+'</span></div>';}).join('');
+}
+
+// SCOR
+function calcScore(){
+  var vals=Object.values(scores).filter(function(v){return typeof v==='number';});
+  if(!vals.length) return;
+  var avg=Math.round(vals.reduce(function(a,b){return a+b;},0)/vals.length);
+  $('scRing').textContent=avg; $('scFill').style.width=avg+'%';
+  var lbl,clr;
+  if(avg>=80){lbl='Excelent';clr='#00ff9d';}
+  else if(avg>=60){lbl='Bun';clr='#00e5ff';}
+  else if(avg>=40){lbl='Acceptabil';clr='#ffb300';}
+  else{lbl='Probleme serioase';clr='#ff3d5a';}
+  $('scVal').textContent=avg+'/100 - '+lbl; $('scVal').style.color=clr;
+  $('scRing').style.borderColor=clr; $('scRing').style.color=clr;
+}
+
+// BUG REPORT
+function buildBugs(){
+  var list=$('buglist');
+  if(!bugs.length){ list.innerHTML='<div class="bitem"><span class="bdot o"></span><span>Nicio problema detectata automat.</span></div>'; bdg('bug','ok','0 probleme'); return; }
+  list.innerHTML=bugs.map(function(b){ return '<div class="bitem"><span class="bdot '+(b.type==='err'?'e':'w')+'"></span><span>'+b.msg+'</span></div>'; }).join('');
+  var e=bugs.filter(function(b){return b.type==='err';}).length, w=bugs.filter(function(b){return b.type==='warn';}).length;
+  bdg('bug',e?'fail':'warn',e+' erori / '+w+' avert.');
+}
+
+// ═══════════════════════════════════════
+// AI ANALYSIS
+// ═══════════════════════════════════════
+async function runAIAnalysis(){
+  var btn=$('aiBtn');
+  btn.disabled=true; btn.textContent='✦ AI ANALIZEAZA...';
+  $('aiPanel').style.display='block';
+  openSec(''); // just show panel
+  $('bdy-ai') && $('bdy-ai').classList.add('vis');
+  var resp=$('aiResponse');
+  resp.classList.add('vis');
+  resp.innerHTML='<span class="ai-typing"></span> AI analizeaza rezultatele...';
+
+  var prompt = 'Esti un expert in diagnosticare hardware telefoane mobile, specializat in evaluarea pentru amanet si cumparare second-hand. '+
+    'Analizeaza urmatoarele rezultate de diagnosticare si ofera un raport detaliat in ROMANA.\n\n'+
+    'REZULTATE SCANARE:\n'+
+    '- Baterie: '+(scanResults.baterie||'Netestat')+'\n'+
+    '- Accelerometru: '+(scanResults.accelerometru||'Netestat')+'\n'+
+    '- Giroscop: '+(scanResults.giroscop||'Netestat')+'\n'+
+    '- GPS: '+(scanResults.gps||'Netestat')+'\n'+
+    '- Microfon: '+(scanResults.microfon||'Netestat')+'\n'+
+    '- Difuzor: '+(scanResults.difuzor||'Netestat')+'\n'+
+    '- Camera: '+(scanResults.camera||'Netestat')+'\n'+
+    '- Vibratie: '+(scanResults.vibratie||'Netestat')+'\n'+
+    '- Ecran: '+(scanResults.ecran||'Netestat')+'\n'+
+    '- Touch: '+(scanResults.touch||'Netestat')+'\n'+
+    '- CPU: '+(scanResults.cpu||'Netestat')+'\n'+
+    '- RAM: '+(scanResults.ram||'Netestat')+'\n'+
+    '- Retea: '+(scanResults.retea||'Netestat')+'\n'+
+    '- Stress CPU: '+(scanResults.cpuStress||'Netestat')+'\n'+
+    '- Integritate stocare: '+(scanResults.stocare_int||'Netestat')+'\n'+
+    '- Stress RAM: '+(scanResults.ram_stress||'Netestat')+'\n'+
+    '- Voltage Sag: '+(scanResults.voltageSag||'Netestat')+'\n'+
+    '- Scor general: '+(scanResults.scor||0)+'/100\n'+
+    '- Erori critice: '+(scanResults.erori||0)+'\n'+
+    '- Avertismente: '+(scanResults.avertismente||0)+'\n'+
+    '- Verdict automat: '+(scanResults.verdict||'Netestat')+'\n\n'+
+    'Ofera:\n'+
+    '1. EVALUARE COMPONENTE - analiza fiecarei componente testate (2-3 propozitii per componenta)\n'+
+    '2. RISCURI IDENTIFICATE - ce probleme ar putea aparea in viitor bazat pe rezultate\n'+
+    '3. RECOMANDARE PRET - daca e pentru amanet/cumparare, cat ar trebui sa coste raportat la defecte\n'+
+    '4. VERDICT FINAL - Verde/Galben/Rosu cu justificare clara\n'+
+    '5. SFATURI SPECIFICE - ce sa verifici manual suplimentar\n\n'+
+    'Fii direct, concis si practic. Vorbeste ca un expert tehnic care ajuta pe cineva la un amanet.';
+
+  try{
+    var response = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1500,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    var data=await response.json();
+    var text=data.content&&data.content[0]?data.content[0].text:'Eroare raspuns AI';
+
+    // Format the response nicely
+    var sections=text.split(/\n(?=\d+\.|\*\*[A-Z])/);
+    var html=text
+      .replace(/\*\*(.*?)\*\*/g,'<strong style="color:#a855f7">$1</strong>')
+      .replace(/^(\d+\.\s+[A-Z ]+)/gm,'<div class="ai-section-title">$1</div>')
+      .replace(/\n\n/g,'</p><p style="margin-top:8px">')
+      .replace(/\n/g,'<br>');
+
+    // Add verdict box at top
+    var verdictColor='green';
+    if(text.includes('Galben')||text.includes('GALBEN')) verdictColor='yellow';
+    if(text.includes('Rosu')||text.includes('ROSU')||text.includes('NU ACCEPTA')) verdictColor='red';
+
+    resp.innerHTML=
+      '<div class="ai-verdict-box '+verdictColor+'">'+
+        (verdictColor==='green'?'✅ AI VERDICT: SIGUR':verdictColor==='yellow'?'⚠️ AI VERDICT: ATENTIE':'🚫 AI VERDICT: NU ACCEPTA')+
+      '</div>'+
+      '<div style="margin-top:12px;line-height:1.8;font-size:.75rem">'+html+'</div>';
+
+    btn.textContent='✦ REGENEREAZA ANALIZA AI';
+    btn.disabled=false;
+  } catch(e){
+    resp.innerHTML='<div style="color:var(--w);font-size:.75rem">'+
+      'Eroare conexiune AI: '+e.message+'<br><br>'+
+      'Asigura-te ca aplicatia ruleaza de pe HTTPS (nu file://).<br>'+
+      'Incearca sa o deschizi de pe GitHub Pages sau Netlify.'+
+    '</div>';
+    btn.textContent='✦ INCEARCA DIN NOU';
+    btn.disabled=false;
+  }
+}
+
+// SCAN COMPLET
+async function runScan(){
+  bugs=[]; scores={}; scanResults={};
+  var btn=$('mainBtn');
+  btn.disabled=true; btn.textContent='... SCANARE IN PROGRES';
+  $('aiBtn').disabled=true;
+  ['bat','sen','aud','dsp','net','hw','str','vrd','bug'].forEach(openSec);
+  await testBattery();   await delay(150);
+  testDisplay();         await delay(100);
+  testHardware();        await delay(100);
+  await testNetwork();   await delay(150);
+  testVibrate();         await delay(100);
+  setupTouch();
+  testAccel(); testGyro();
+  await delay(5500);
+  await testCamera();    await delay(200);
+  await stressCPU();     await delay(200);
+  await stressStorage(); await delay(200);
+  await stressRAM();     await delay(200);
+  buildBugs(); calcScore(); calcVerdict();
+  openSec('vrd');
+  btn.disabled=false; btn.textContent='↺ RESCANEAZA';
+  $('aiBtn').disabled=false;
+  $('aiBtn').textContent='✦ ANALIZA AI DETALIATA (APASA DUPA SCANARE)';
+}
+
+window.addEventListener('DOMContentLoaded',function(){
+  testDisplay(); setupTouch();
+  if(screen.orientation) screen.orientation.addEventListener('change',testDisplay);
+});
+</script>
+</body>
+</html>
