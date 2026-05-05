@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UA Check</title>
+<style>body{background:#0d0d0f;color:#e8e8f0;font-family:monospace;padding:20px;font-size:13px;}
+.box{background:#1a1a1e;border:1px solid #333;border-radius:10px;padding:16px;margin-bottom:12px;word-break:break-all;line-height:1.8;}
+b{color:#06b6d4;}
+.btn{background:#1e4d8c;border:1px solid #3b82f6;color:#60a5fa;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:13px;margin-top:10px;width:100%;}</style>
+</head><body>
+<div class="box"><b>User Agent:</b><br><span id="ua"></span></div>
+<div class="box">
+<b>Screen CSS:</b> <span id="scr"></span><br>
+<b>Rezolutie fizica:</b> <span id="phy"></span><br>
+<b>DPR:</b> <span id="dpr"></span><br>
+<b>RAM raportat:</b> <span id="ram"></span><br>
+<b>CPU nuclee:</b> <span id="cpu"></span>
+</div>
+<button class="btn" onclick="doCopy()">📋 Copiaza toate datele</button>
+<script>
+const ua = navigator.userAgent;
+const dpr = window.devicePixelRatio || 1;
+const sw = screen.width, sh = screen.height;
+const pw = Math.round(sw*dpr), ph = Math.round(sh*dpr);
+document.getElementById('ua').textContent = ua;
+document.getElementById('scr').textContent = sw + 'x' + sh;
+document.getElementById('phy').textContent = pw + 'x' + ph;
+document.getElementById('dpr').textContent = dpr;
+document.getElementById('ram').textContent = (navigator.deviceMemory || 'N/A') + ' GB';
+document.getElementById('cpu').textContent = navigator.hardwareConcurrency || 'N/A';
+function doCopy(){
+  const txt = 'UA: ' + ua + '\nScreen CSS: ' + sw + 'x' + sh + '\nFizic: ' + pw + 'x' + ph + '\nDPR: ' + dpr + '\nRAM: ' + (navigator.deviceMemory||'N/A') + '\nCPU: ' + navigator.hardwareConcurrency;
+  if(navigator.clipboard) navigator.clipboard.writeText(txt).then(()=>alert('Copiat!'));
+  else { const ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); alert('Copiat!'); }
+}
+</script>
+</body></html>
